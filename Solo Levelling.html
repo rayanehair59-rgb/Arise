@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>ARISE</title> 
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/hjMW5z3k/Chat-GPT-Image-13-janv-2026-14-22-09.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/hjMW5z3k/Chat-GPT-Image-13-janv-2026-14-22-09.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00f7ff;
+            --bg-dark: #050508;
+            --panel-bg: rgba(12, 18, 25, 0.96);
+            --border: 1px solid rgba(0, 247, 255, 0.3);
+            --gold: #ffd700;
+            --danger: #ff2a2a;
+            --energy: #1eff00;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0; padding: 0; 
+            padding-bottom: calc(70px + env(safe-area-inset-bottom));
+            overflow-x: hidden;
+            overscroll-behavior-y: none;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(5, 10, 20, 1));
+            padding-top: env(safe-area-inset-top);
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 5px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary); } 100% { box-shadow: 0 0 5px var(--primary); } }
+        
+        .screen { display: none; padding: 20px; animation: fadeIn 0.4s ease-out; }
+        .screen.active { display: block; }
+
+        /* BOXES */
+        .hologram-box {
+            background: var(--panel-bg); border: var(--border);
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.05);
+            border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative;
+        }
+
+        h2 { color: var(--primary); text-transform: uppercase; margin: 0 0 15px 0; letter-spacing: 2px; border-bottom: 1px solid rgba(0,247,255,0.2); padding-bottom: 5px; font-size: 18px; }
+        .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .val { font-size: 20px; font-weight: bold; color: white; }
+
+        /* BARS */
+        .bar-container { background: #222; height: 6px; width: 100%; margin: 5px 0; border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.5s; }
+        .xp-fill { background: var(--primary); }
+        .energy-fill { background: var(--energy); box-shadow: 0 0 5px var(--energy); }
+        .boss-fill { background: var(--danger); }
+
+        /* AWAKENING SCREEN (QUIZ) */
+        #screen-awakening {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 5000; display: none;
+            flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+        }
+        .quiz-btn {
+            background: rgba(0, 247, 255, 0.1); border: 1px solid var(--primary);
+            color: white; padding: 15px; width: 100%; margin-top: 15px;
+            font-family: 'Rajdhani'; font-size: 16px; cursor: pointer; transition: 0.3s;
+        }
+        .quiz-btn:active { background: var(--primary); color: black; }
+
+        /* GUILD & RAID */
+        .guild-locked { text-align: center; padding: 30px; border: 2px dashed #444; color: #666; margin-top: 10px; }
+        .hunter-card { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: rgba(255,215,0,0.05); border: 1px solid #444; 
+            padding: 15px; margin-bottom: 10px; border-radius: 5px;
+        }
+        .raid-card { border: 1px solid var(--danger); background: rgba(50, 0, 0, 0.3); padding: 15px; margin-top: 20px; border-radius: 8px; text-align: center; }
+        .boss-img-sm { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid var(--danger); margin-bottom: 10px; }
+
+        /* INVENTORY */
+        .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
+        .inv-slot { height: 50px; background: rgba(0,0,0,0.5); border: 1px dashed #444; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        .inv-slot.filled { border: 1px solid var(--gold); color: var(--gold); }
+
+        /* SHOP REAL */
+        .shop-cat { color: var(--gold); font-size: 12px; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; }
+
+        /* NAV */
+        .nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; /* Base height */
+            padding-bottom: env(safe-area-inset-bottom); /* iPhone safe area */
+            background: #080808; border-top: 1px solid #333;
+            display: flex; justify-content: space-around; align-items: center; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #555; font-size: 9px; }
+        .nav-item.active { color: var(--primary); transform: translateY(-3px); text-shadow: 0 0 10px var(--primary); }
+        .nav-icon { font-size: 20px; margin-bottom: 2px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="screen-awakening">
+        <h2 id="quizTitle" style="font-size:24px; animation:pulse 2s infinite;">ANALYSE DU CANDIDAT...</h2>
+        <p id="quizQuestion" style="color:#ccc; margin-bottom:30px; line-height:1.4;">Question...</p>
+        <div id="quizOptions" style="width:100%;"></div>
+    </div>
+
+    <audio id="sfx-ui" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="sfx-lvl" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+
+    <div id="screen-home" class="screen active">
+        <div class="hologram-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div class="val" id="dispName" style="color:var(--primary);">JOUEUR</div>
+                    <div style="font-size:12px; color:#aaa;" id="dispJob">Civil</div>
+                </div>
+                <div style="font-size:24px; font-weight:bold; border:2px solid white; border-radius:50%; width:40px; height:40px; display:flex; justify-content:center; align-items:center;" id="dispRank">E</div>
+            </div>
+            
+            <div class="label" style="margin-top:10px;">EXP (NIV <span id="dispLevel">1</span>)</div>
+            <div class="bar-container"><div class="bar-fill xp-fill" id="barXp"></div></div>
+            
+            <div class="label">ÉNERGIE</div>
+            <div class="bar-container"><div class="bar-fill energy-fill" id="barEnergy"></div></div>
+            <div style="text-align:right; font-size:10px;"><span id="valEnergy">100</span>/100</div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <div class="hologram-box" style="flex:1; text-align:center;">
+                <div class="val" style="color:var(--gold);" id="dispGold">0</div>
+                <div class="label">GOLD</div>
+            </div>
+            <div class="hologram-box" style="flex:1; text-align:center;">
+                <div class="val" id="dispStreak">0</div>
+                <div class="label">STREAK</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-status" class="screen">
+        <h2>Inventaire (Bonus Passifs)</h2>
+        <div class="inv-grid" id="invGrid"></div>
+
+        <h2>Statistiques</h2>
+        <div class="hologram-box" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; text-align:center;">
+            <div><div class="val" id="sStr">0</div><div class="label">FORCE</div></div>
+            <div><div class="val" id="sAgi">0</div><div class="label">AGILITÉ</div></div>
+            <div><div class="val" id="sInt">0</div><div class="label">INTEL</div></div>
+            <div><div class="val" id="sVit">0</div><div class="label">VITALITÉ</div></div>
+        </div>
+    </div>
+
+    <div id="screen-quests" class="screen">
+        <h2>Quotidien (Scalable)</h2>
+        <div id="dailyList"></div>
+
+        <div class="raid-card">
+            <img src="https://i.pinimg.com/originals/8a/15/50/8a155070576b269dd14ba91ce34f2825.gif" class="boss-img-sm">
+            <div style="display:flex; justify-content:space-between; color:var(--danger);">
+                <b>🐉 KAMISH (BOSS)</b>
+                <span><span id="raidHp">5000</span> HP</span>
+            </div>
+            <div class="bar-container" style="height:10px; border:1px solid #500;"><div class="bar-fill boss-fill" id="raidBar"></div></div>
+            <div style="font-size:11px; margin-bottom:10px;">Action: 10 Burpees = 50 Dégâts</div>
+            <button onclick="attackRaid()" style="width:100%; background:var(--danger); border:none; padding:10px; color:white; font-weight:bold;">ATTAQUER (10⚡) | Gain: 5000 Or</button>
+        </div>
+
+        <div class="hologram-box" onclick="startDungeon()" style="margin-top:20px; text-align:center; border-color:red; cursor:pointer;">
+            <b style="color:red;">ENTRER DONJON</b><br>
+            <span style="font-size:10px;">Coût: 20 Énergie | Clé: <span id="keyVal">1</span></span>
+        </div>
+    </div>
+
+    <div id="screen-guild" class="screen">
+        <h2>Quartier Général</h2>
+        
+        <div id="guildLocked" class="guild-locked">
+            <h3>ZONE VERROUILLÉE</h3>
+            <p style="font-size:12px;">REQUIS :<br>Niv 15 + 8000 Or + Permis</p>
+            <button onclick="unlockGuild()" style="background:#444; color:white; padding:10px;">ACHETER QG</button>
+        </div>
+
+        <div id="guildUnlocked" style="display:none;">
+            <div class="hologram-box" style="text-align:center; border:1px solid var(--gold);">
+                <div class="val" style="color:var(--gold);">+<span id="guildIncome">0</span> OR</div>
+                <div class="label">REVENU EN ATTENTE</div>
+                <button onclick="collectTax()" style="margin-top:5px; background:var(--gold); color:black; border:none; padding:10px 20px; font-weight:bold;">RÉCOLTER TOUT</button>
+            </div>
+            
+            <div class="hologram-box">
+                <h3>EFFECTIF : <span id="memberCount">0</span></h3>
+                <div class="hunter-card">
+                    <div>
+                        <b>CHASSEUR D'ÉLITE</b><br>
+                        <span style="font-size:10px; color:#aaa;">Production: 50 Or / Jour</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="color:var(--gold); font-weight:bold;">30 000 🪙</span><br>
+                        <button onclick="recruit()" style="background:#333; color:white; border:1px solid white; padding:5px 10px; margin-top:5px;">RECRUTER</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-shop" class="screen">
+        <h2>Boutique</h2>
+        <div id="shopList"></div>
+    </div>
+
+    <div id="screen-dungeon" class="screen" style="text-align:center;">
+        <h2 style="color:red;">ÉTAGE <span id="floorNum">1</span></h2>
+        <img id="enemyImg" style="width:100%; height:150px; object-fit:cover; border:1px solid red; margin-bottom:10px;">
+        <div id="enemyName" style="font-size:24px; font-weight:bold;">ENNEMI</div>
+        <div style="background:#330000; padding:15px; margin:20px 0; border-radius:5px;">
+            <div style="color:#ff8888; font-size:12px;">MISSION</div>
+            <div id="dungeonTask" style="font-size:18px; font-weight:bold;">TASK</div>
+        </div>
+        <button onclick="dungeonAttack()" style="width:100%; padding:15px; background:red; color:white; border:none; font-size:18px;">FRAPPER ⚔️</button>
+        <button onclick="nav('quests')" style="margin-top:10px; background:none; border:none; color:#888;">Fuir</button>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item active" onclick="nav('home', this)"><div class="nav-icon">🏠</div><span>QG</span></div>
+        <div class="nav-item" onclick="nav('status', this)"><div class="nav-icon">🛡️</div><span>INV</span></div>
+        <div class="nav-item" onclick="nav('quests', this)"><div class="nav-icon">⚔️</div><span>QUÊTES</span></div>
+        <div class="nav-item" onclick="nav('guild', this)"><div class="nav-icon">🏰</div><span>GUILDE</span></div>
+        <div class="nav-item" onclick="nav('shop', this)"><div class="nav-icon">🛒</div><span>SHOP</span></div>
+    </div>
+
+    <script>
+        /* CONFIGURATION REALISTE */
+        const ITEMS = [
+            {id:'permis', name:"Permis Guilde", cost:2000, type:'game', desc:"Requis pour QG"},
+            {id:'potion', name:"Potion Fatigue", cost:150, type:'use', desc:"Rend 50 Énergie"},
+            {id:'snack', name:"Snack / Soda", cost:200, type:'real', desc:"Plaisir coupable"},
+            {id:'game', name:"1h Jeu Vidéo", cost:300, type:'real', desc:"Session gaming"},
+            {id:'serie', name:"Épisode Série", cost:250, type:'real', desc:"Netflix / Anime"},
+            {id:'cheat', name:"Gros Cheat Meal", cost:1000, type:'real', desc:"Fast Food / Resto"}
+        ];
+        
+        const BASE_TASKS = [
+            {t:"Squats", base:10}, {t:"Pompes", base:5}, {t:"Planche (sec)", base:20}, {t:"Lecture (p)", base:2}
+        ];
+
+        const MONSTERS = [
+            {n:"GOBELIN", i:"https://media.tenor.com/images/30c00c710d0f7236e788414436974776/tenor.gif"},
+            {n:"LOUP AFFAMÉ", i:"https://i.pinimg.com/originals/99/d9/b3/99d9b3200b21849a6231d68305c45e5d.gif"},
+            {n:"CHEVALIER NOIR", i:"https://i.pinimg.com/originals/26/66/83/26668388484646700c2560802c638210.gif"},
+            {n:"LICH (MAGE)", i:"https://i.makeagif.com/media/9-08-2021/K5C24D.gif"},
+            {n:"IGRIS LE ROUGE", i:"https://media1.tenor.com/m/K_H_s-5Sj1AAAAAC/solo-leveling-igris.gif"}
+        ];
+
+        const QUIZ = [
+            {
+                q: "Un projet difficile (examen/travail) arrive bientôt. Comment réagis-tu ?",
+                opts: [
+                    {t: "Je travaille dur jusqu'à l'épuisement (Effort Brut)", type: "str"},
+                    {t: "Je m'organise pour finir vite (Efficacité)", type: "agi"},
+                    {t: "J'analyse le sujet pour optimiser (Stratégie)", type: "int"}
+                ]
+            },
+            {
+                q: "Quel est ton objectif principal dans la vie ?",
+                opts: [
+                    {t: "Avoir un corps et un mental d'acier", type: "str"},
+                    {t: "Être libre et ne dépendre de personne", type: "agi"},
+                    {t: "Avoir des connaissances et du pouvoir", type: "int"}
+                ]
+            },
+            {
+                q: "Tu as 1h de libre. Que fais-tu ?",
+                opts: [
+                    {t: "Sport / Musculation", type: "str"},
+                    {t: "Sortir / Bouger / Courir", type: "agi"},
+                    {t: "Lire / Apprendre / Méditer", type: "int"}
+                ]
+            }
+        ];
+
+        let game = {
+            name: "Joueur", job: "Civil", level: 1, xp: 0, xpMax: 100, gold: 0, energy: 100,
+            stats: {str:10, agi:10, int:10, vit:10}, streak: 0, lastDate: "",
+            dungeonKey: 1, shadows: [], daily: [],
+            guild: { unlocked: false, members: 0, collected: false },
+            raid: { hp: 5000 }, inventory: []
+        };
+        let currentFloor = 1;
+        let quizScore = {str:0, agi:0, int:0};
+        let quizIndex = 0;
+
+        window.onload = function() {
+            let save = localStorage.getItem("SL_V13");
+            if(save) {
+                game = {...game, ...JSON.parse(save)};
+                if(!game.inventory) game.inventory = [];
+                if(!game.energy) game.energy = 100;
+                if(!game.guild) game.guild = { unlocked:false, members:0, collected:false };
+                checkDate();
+                render();
+            } else {
+                let userName = prompt("Entrez votre Nom (Système):");
+                if(userName) game.name = userName;
+                startAwakening();
+            }
+        }
+        function save() { localStorage.setItem("SL_V13", JSON.stringify(game)); render(); }
+
+        /* AWAKENING */
+        function startAwakening() {
+            document.getElementById('screen-awakening').style.display = 'flex';
+            showQuestion();
+        }
+        function showQuestion() {
+            if(quizIndex >= QUIZ.length) { finishAwakening(); return; }
+            let q = QUIZ[quizIndex];
+            document.getElementById('quizQuestion').innerText = q.q;
+            let div = document.getElementById('quizOptions');
+            div.innerHTML = "";
+            q.opts.forEach(opt => {
+                let btn = document.createElement('button');
+                btn.className = 'quiz-btn';
+                btn.innerText = opt.t;
+                btn.onclick = () => { quizScore[opt.type]++; quizIndex++; showQuestion(); play('ui'); };
+                div.appendChild(btn);
+            });
+        }
+        function finishAwakening() {
+            let job = "VANGUARD"; let max = quizScore.str;
+            if(quizScore.agi > max) { max = quizScore.agi; job = "ASSASSIN"; }
+            if(quizScore.int > max) { max = quizScore.int; job = "SHADOW MAGE"; }
+            if(job === "VANGUARD") game.stats.str += 5;
+            if(job === "ASSASSIN") game.stats.agi += 5;
+            if(job === "SHADOW MAGE") game.stats.int += 5;
+            game.job = job;
+            alert("ÉVEIL TERMINÉ. CLASSE ATTRIBUÉE : " + job);
+            document.getElementById('screen-awakening').style.display = 'none';
+            checkDate();
+            render();
+            save();
+        }
+
+        /* LOGIC */
+        function checkDate() {
+            let t = new Date().toDateString();
+            if(game.lastDate !== t) {
+                game.dungeonKey = 1; game.energy = 100; game.guild.collected = false; game.daily = [];
+                let mult = 1 + (game.level * 0.3); 
+                BASE_TASKS.forEach(task => {
+                    let amount = Math.floor(task.base * mult);
+                    let reward = Math.floor(15 * mult);
+                    game.daily.push({ txt: `${amount} ${task.t}`, xp: 15, gold: reward, done:false });
+                });
+                let y = new Date(); y.setDate(y.getDate()-1);
+                if(game.lastDate === y.toDateString()) game.streak++; else if(game.lastDate !== t) game.streak=0;
+                game.lastDate = t;
+                save();
+            }
+        }
+
+        function render() {
+            document.getElementById('dispName').innerText = game.name;
+            document.getElementById('dispJob').innerText = game.job;
+            document.getElementById('dispLevel').innerText = game.level;
+            document.getElementById('barXp').style.width = (game.xp/game.xpMax*100)+"%";
+            document.getElementById('valEnergy').innerText = game.energy;
+            document.getElementById('barEnergy').style.width = (game.energy)+"%";
+            document.getElementById('dispGold').innerText = game.gold;
+            document.getElementById('dispStreak').innerText = game.streak;
+            document.getElementById('sStr').innerText = game.stats.str;
+            document.getElementById('sAgi').innerText = game.stats.agi;
+            document.getElementById('sInt').innerText = game.stats.int;
+            document.getElementById('sVit').innerText = game.stats.vit;
+
+            let ig = document.getElementById('invGrid'); ig.innerHTML="";
+            for(let i=0; i<4; i++) {
+                let item = game.inventory[i];
+                ig.innerHTML += `<div class="inv-slot ${item?'filled':''}">${item ? item.name.charAt(0) : ''}</div>`;
+            }
+
+            let dl = document.getElementById('dailyList'); dl.innerHTML="";
+            game.daily.forEach((q,i)=> dl.innerHTML+=`<div class="hologram-box" style="display:flex; justify-content:space-between; padding:10px; margin-bottom:5px; border-left:3px solid ${q.done?'var(--primary)':'#444'}; opacity:${q.done?0.5:1}" onclick="doDaily(${i})"><span>${q.txt}</span><span>${q.done?'OK':'+'+q.gold+'Or'}</span></div>`);
+
+            document.getElementById('raidHp').innerText = game.raid.hp;
+            document.getElementById('raidBar').style.width = (game.raid.hp/5000*100)+"%";
+
+            document.getElementById('guildLocked').style.display = game.guild.unlocked ? 'none' : 'block';
+            document.getElementById('guildUnlocked').style.display = game.guild.unlocked ? 'block' : 'none';
+            document.getElementById('memberCount').innerText = game.guild.members;
+            let income = game.guild.members * 50;
+            document.getElementById('guildIncome').innerText = game.guild.collected ? "0" : income;
+
+            let sl = document.getElementById('shopList'); sl.innerHTML="";
+            let gameItems = ITEMS.filter(i=>i.type!=='real');
+            let realItems = ITEMS.filter(i=>i.type==='real');
+            sl.innerHTML += `<div class="shop-cat">Système</div>`;
+            gameItems.forEach(it => { let owned = game.inventory.find(x=>x.id===it.id); sl.innerHTML+=renderShopItem(it, owned); });
+            sl.innerHTML += `<div class="shop-cat">Récompenses Réelles</div>`;
+            realItems.forEach(it => { sl.innerHTML+=renderShopItem(it, false); });
+            document.getElementById('keyVal').innerText = game.dungeonKey;
+        }
+
+        function renderShopItem(it, owned) {
+            return `<div class="hologram-box" style="padding:10px; display:flex; justify-content:space-between;"><div><b>${it.name}</b><br><span style="font-size:10px; color:#aaa;">${it.desc}</span></div><button onclick="buy('${it.id}')" style="border:1px solid var(--gold); background:none; color:var(--gold);">${owned && it.type!=='use' ? 'ACQUIS' : it.cost}</button></div>`;
+        }
+
+        /* ACTIONS */
+        function doDaily(i) {
+            if(!game.daily[i].done) { game.daily[i].done=true; game.xp += game.daily[i].xp; game.gold += game.daily[i].gold; play('ui'); checkLvl(); save(); }
+        }
+        function attackRaid() {
+            if(game.raid.hp <= 0) { alert("Kamish est vaincu !"); return; }
+            if(game.energy < 10) { alert("Fatigué (Besoin 10⚡)"); return; }
+            if(confirm("10 Burpees faits ?")) {
+                game.energy -= 10; game.raid.hp -= 50;
+                if(game.raid.hp <= 0) { game.raid.hp=0; game.gold+=5000; alert("VICTOIRE ! +5000 OR !"); }
+                save();
+            }
+        }
+        function startDungeon() {
+            if(game.dungeonKey < 1) { alert("Plus de clé"); return; }
+            if(game.energy < 20) { alert("Fatigué (Besoin 20⚡)"); return; }
+            currentFloor=1; loadFloor(); nav('dungeon');
+        }
+        function loadFloor() {
+            let m = MONSTERS[currentFloor-1];
+            document.getElementById('floorNum').innerText = currentFloor;
+            document.getElementById('enemyName').innerText = m.n;
+            document.getElementById('enemyImg').src = m.i;
+            let reps = Math.floor((currentFloor * 5) * (1 + game.level*0.1)); 
+            document.getElementById('dungeonTask').innerText = `${reps} Squats`;
+        }
+        function dungeonAttack() {
+            if(confirm("Fait ?")) {
+                if(currentFloor<5) { currentFloor++; loadFloor(); }
+                else { alert("VICTOIRE !"); game.gold += 150 * game.level; game.dungeonKey=0; game.energy-=20; nav('quests'); save(); }
+            }
+        }
+        function unlockGuild() {
+            let hasPermit = game.inventory.find(x=>x.id==='permis');
+            if(game.level >= 15 && game.gold >= 8000 && hasPermit) { if(confirm("Débloquer le QG ?")) { game.gold -= 8000; game.guild.unlocked = true; save(); } } else alert("Requis: Niv 15 + 8000 Or + Permis");
+        }
+        function recruit() {
+            if(game.gold >= 30000) { if(confirm("Recruter pour 30 000 Or ?")) { game.gold -= 30000; game.guild.members++; alert("Recruté !"); save(); } } else alert("Pas assez d'or");
+        }
+        function collectTax() {
+            if(game.guild.collected) { alert("Déjà récolté."); return; }
+            let income = game.guild.members * 50;
+            if(income > 0) { game.gold += income; game.guild.collected = true; alert(`Récolté : ${income} Or`); save(); } else alert("Aucun revenu.");
+        }
+        function buy(id) {
+            let it = ITEMS.find(x=>x.id===id);
+            if(game.gold >= it.cost) {
+                if(it.type==='real') { if(confirm(`Acheter "${it.name}" ?`)) { game.gold-=it.cost; alert("Acheté ! Savoure ta récompense IRL."); } }
+                else if(it.type==='use') { game.gold-=it.cost; game.energy=Math.min(100, game.energy+50); alert("Énergie +50"); }
+                else { if(game.inventory.find(x=>x.id===id)) { alert("Déjà possédé"); return; } game.gold-=it.cost; game.inventory.push(it); alert("Acheté !"); }
+                save();
+            } else alert("Pas assez d'or");
+        }
+        function checkLvl() { if(game.xp>=game.xpMax) { game.xp-=game.xpMax; game.level++; game.xpMax=Math.floor(game.xpMax*1.2); game.energy=100; alert("Level Up!"); } }
+        function nav(i,e) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+i).classList.add('active'); if(e) { document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); e.classList.add('active'); } }
+        function play(i) { document.getElementById('sfx-'+i).play().catch(()=>{}); }
+    </script>
+</body>
+</html>
